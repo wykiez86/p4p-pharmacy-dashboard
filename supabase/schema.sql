@@ -1,6 +1,4 @@
 -- Run in the Supabase SQL Editor for the project used by this app.
-create schema if not exists private;
-
 create table if not exists public.app_users (
   user_id uuid primary key references auth.users (id) on delete cascade,
   active boolean not null default true,
@@ -45,23 +43,6 @@ create index if not exists entries_month_idx on public.entries (month);
 create index if not exists entries_staff_idx on public.entries (staff_id);
 create index if not exists entries_activity_idx on public.entries (activity_id);
 
-create or replace function private.is_p4p_user()
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1 from public.app_users
-    where user_id = (select auth.uid()) and active = true
-  );
-$$;
-
-revoke all on function private.is_p4p_user() from public, anon;
-grant usage on schema private to authenticated;
-grant execute on function private.is_p4p_user() to authenticated;
-
 alter table public.app_users enable row level security;
 alter table public.staff enable row level security;
 alter table public.activities enable row level security;
@@ -84,42 +65,42 @@ using (user_id = (select auth.uid()) and active = true);
 
 drop policy if exists p4p_staff_select on public.staff;
 create policy p4p_staff_select on public.staff
-for select to authenticated using ((select private.is_p4p_user()));
+for select to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_staff_insert on public.staff;
 create policy p4p_staff_insert on public.staff
-for insert to authenticated with check ((select private.is_p4p_user()));
+for insert to authenticated with check (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_staff_update on public.staff;
 create policy p4p_staff_update on public.staff
-for update to authenticated using ((select private.is_p4p_user()))
-with check ((select private.is_p4p_user()));
+for update to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true))
+with check (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_staff_delete on public.staff;
 create policy p4p_staff_delete on public.staff
-for delete to authenticated using ((select private.is_p4p_user()));
+for delete to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 
 drop policy if exists p4p_activities_select on public.activities;
 create policy p4p_activities_select on public.activities
-for select to authenticated using ((select private.is_p4p_user()));
+for select to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_activities_insert on public.activities;
 create policy p4p_activities_insert on public.activities
-for insert to authenticated with check ((select private.is_p4p_user()));
+for insert to authenticated with check (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_activities_update on public.activities;
 create policy p4p_activities_update on public.activities
-for update to authenticated using ((select private.is_p4p_user()))
-with check ((select private.is_p4p_user()));
+for update to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true))
+with check (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_activities_delete on public.activities;
 create policy p4p_activities_delete on public.activities
-for delete to authenticated using ((select private.is_p4p_user()));
+for delete to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 
 drop policy if exists p4p_entries_select on public.entries;
 create policy p4p_entries_select on public.entries
-for select to authenticated using ((select private.is_p4p_user()));
+for select to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_entries_insert on public.entries;
 create policy p4p_entries_insert on public.entries
-for insert to authenticated with check ((select private.is_p4p_user()));
+for insert to authenticated with check (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_entries_update on public.entries;
 create policy p4p_entries_update on public.entries
-for update to authenticated using ((select private.is_p4p_user()))
-with check ((select private.is_p4p_user()));
+for update to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true))
+with check (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
 drop policy if exists p4p_entries_delete on public.entries;
 create policy p4p_entries_delete on public.entries
-for delete to authenticated using ((select private.is_p4p_user()));
+for delete to authenticated using (exists (select 1 from public.app_users as member where member.user_id = (select auth.uid()) and member.active = true));
