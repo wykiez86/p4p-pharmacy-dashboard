@@ -182,7 +182,7 @@ async function saveEntry(event){
  if(!s||!a||!date)return;
  if(!applicableActivities(s).some(x=>x.id===a.id)){alert("กิจกรรมนี้ไม่ได้กำหนดให้บุคลากร/ตำแหน่งนี้");return}
  const month=date.slice(0,7),day=Number(date.slice(8,10)),oldId=$("editId").value,button=$("saveBtn");
- if(month!==activeMonth)await setMonth(month);
+ if(month!==activeMonth){await setMonth(month);alert("เปลี่ยนงวดเดือนแล้ว กรุณาเลือกบุคลากรและกิจกรรมของงวดใหม่อีกครั้ง");return}
  button.disabled=true;button.textContent="กำลังบันทึก…";setStatus("กำลังบันทึกรายการ…");
  try{
   const row={month,staff_id:s.id,activity_id:a.id,day,count:Number($("quantity").value),evidence:$("evidence").value.trim()||null,note:$("note").value.trim()||null};
