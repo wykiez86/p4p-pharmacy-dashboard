@@ -3,7 +3,7 @@
 ## 1. สร้างฐานข้อมูลและตั้ง URL สำหรับ Auth
 
 1. สร้าง project ใน Supabase.
-2. เปิด **SQL Editor** แล้วรันไฟล์ [supabase/schema.sql](supabase/schema.sql).
+2. เปิด **SQL Editor** แล้วรันไฟล์ [supabase/schema.sql](supabase/schema.sql). สคริปต์ให้สิทธิ์ Data API เฉพาะ authenticated ตามต้องใช้ พร้อมเปิด RLS; โปรเจกต์ใหม่ของ Supabase จะไม่เปิดตารางใหม่ให้ Data API อัตโนมัติหากไม่มี GRANT.
 3. ใน **Authentication → URL Configuration** ตั้ง **Site URL** และเพิ่ม Redirect URL เป็น:
    https://wykiez86.github.io/p4p-pharmacy-dashboard/
 
