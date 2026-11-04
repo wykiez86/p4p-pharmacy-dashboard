@@ -20,12 +20,24 @@ create table if not exists public.activities (
   name text not null check (length(trim(name)) > 0),
   points_per_task numeric not null default 0 check (points_per_task >= 0),
   staff_id uuid,
+  role text check (role is null or role in ('เภสัชกร', 'เจ้าพนักงานเภสัชกรรม', 'พนักงานประจำห้องยา')),
+  unit text not null default 'รายการ',
+  time numeric not null default 1 check (time >= 0),
+  factor numeric not null default 1 check (factor >= 0),
+  work numeric not null default 1 check (work >= 0),
   created_at timestamptz not null default now(),
   unique (id, month)
 );
 
 -- Null staff_id means an activity shared by everyone; a value scopes it to one staff member.
 alter table public.activities add column if not exists staff_id uuid;
+alter table public.activities add column if not exists role text;
+alter table public.activities add column if not exists unit text not null default 'รายการ';
+alter table public.activities add column if not exists time numeric not null default 1;
+alter table public.activities add column if not exists factor numeric not null default 1;
+alter table public.activities add column if not exists work numeric not null default 1;
+-- Preserve legacy points_per_task when upgrading existing categories.
+update public.activities set factor = points_per_task where time = 1 and factor = 1 and work = 1 and points_per_task <> 1;
 do $$
 begin
   if not exists (
@@ -49,6 +61,8 @@ create table if not exists public.entries (
   day smallint not null check (day between 1 and 31),
   check (day <= extract(day from (to_date(month || '-01', 'YYYY-MM-DD') + interval '1 month - 1 day'))),
   count numeric not null check (count >= 0),
+  evidence text,
+  note text,
   created_at timestamptz not null default now(),
   constraint entries_staff_month_fk foreign key (staff_id, month)
     references public.staff (id, month) on delete cascade,
@@ -56,6 +70,9 @@ create table if not exists public.entries (
     references public.activities (id, month) on delete cascade,
   unique (month, staff_id, activity_id, day)
 );
+
+alter table public.entries add column if not exists evidence text;
+alter table public.entries add column if not exists note text;
 
 create index if not exists entries_month_idx on public.entries (month);
 create index if not exists entries_staff_idx on public.entries (staff_id);
