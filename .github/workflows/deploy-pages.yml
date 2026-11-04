@@ -1,0 +1,66 @@
+name: Deploy P4P dashboard to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: p4p-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: vars.PAGES_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static site configuration
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "Add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY as Actions secrets."
+            exit 1
+          fi
+          mkdir -p dist
+          cp index.html dist/index.html
+          node <<'NODE'
+          const fs = require("node:fs");
+          const config = {
+            url: process.env.SUPABASE_URL,
+            publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY
+          };
+          fs.writeFileSync("dist/config.js", "window.P4P_CONFIG = " + JSON.stringify(config) + ";\n");
+          NODE
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
