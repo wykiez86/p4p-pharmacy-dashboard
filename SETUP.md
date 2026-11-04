@@ -1,39 +1,46 @@
-# ตั้งค่าการเชื่อม Google Sheets และ Deploy
+# ตั้งค่า Supabase และ Deploy ผ่าน GitHub
 
-## โครงสร้าง
+## 1. สร้างฐานข้อมูล
 
-- Code.gs อ่านและเขียนชีตสำหรับบุคลากร ประเภทงาน และรายการจำนวนงานรายวัน
-- Index.html เป็นหน้าจอของเว็บแอป Apps Script และบันทึกผ่าน google.script.run
-- GitHub Actions ส่งไฟล์ Apps Script จาก branch main ไปยัง Google Apps Script ด้วย clasp
-- การเผยแพร่ตั้งต้นเป็นสิทธิ์เฉพาะเจ้าของแอป (MYSELF) และทำงานภายใต้บัญชีเจ้าของ (USER_DEPLOYING)
+1. สร้าง project ใน Supabase.
+2. เปิด **SQL Editor** แล้วรันไฟล์ [supabase/schema.sql](supabase/schema.sql).
+3. ใน **Authentication → Sign In / Providers** ปิดการสมัครสมาชิกสาธารณะ (Allow new users to sign up). แอปไม่มีปุ่มสมัครบัญชีและให้เข้าได้เฉพาะผู้ใช้ที่อนุมัติ
 
-ข้อมูลยังไม่ถูกส่งไปยัง GitHub Pages: หน้า GitHub Pages จาก private repository ยังอาจเปิดสู่สาธารณะตามแผนและการตั้งค่าบัญชี จึงใช้ Apps Script เป็นตัวให้บริการหน้าเว็บและเชื่อมชีตโดยตรง
+Schema สร้างตารางข้อมูลผู้ใช้ที่อนุมัติ บุคลากร ประเภทงาน และจำนวนงานรายวัน พร้อมเปิด RLS และจำกัดการอ่าน/เขียนไว้ที่ผู้ใช้ที่อยู่ใน allowlist เท่านั้น
 
-## ตั้งค่าครั้งแรก
+## 2. อนุมัติผู้ใช้
 
-1. เปิดชีตที่ต้องการใช้ แล้วเลือก **ส่วนขยาย → Apps Script** เพื่อสร้างหรือเปิด Apps Script project ที่ผูกกับชีตนี้
-2. ใน Apps Script ไปที่ **Project Settings** แล้วคัดลอก **Script ID** ไว้ เปิด Apps Script API ที่ https://script.google.com/home/usersettings และสร้างข้อมูลรับรอง clasp ด้วยบัญชี Google เจ้าของโปรเจกต์
-3. ใน GitHub ไปที่ **Settings → Secrets and variables → Actions** แล้วเพิ่ม repository secrets:
-   - CLASP_JSON: JSON รูปแบบ {"scriptId":"SCRIPT_ID","rootDir":"."}
-   - CLASPRC_JSON: เนื้อหาของไฟล์ .clasprc.json จาก clasp login
-4. เพิ่ม repository variable GAS_DEPLOY_ENABLED เป็น true.
-5. เปิด **Actions → Deploy P4P to Google Apps Script → Run workflow**. การรันครั้งแรกจะส่ง source code ไปยัง Apps Script; หากยังไม่มี deployment ID workflow จะหยุดหลังส่ง source สำเร็จ
-6. เมื่อ source ถูกส่งแล้ว ใน Apps Script เลือก **Deploy → New deployment → Web app**. ตั้ง **Execute as: Me** และ **Who has access: Only myself** แล้วสร้าง deployment.
-7. คัดลอก deployment ID จาก URL ของ web app แล้วเพิ่มเป็น repository secret ชื่อ GAS_DEPLOYMENT_ID.
-8. เปิด web app URL ด้วยบัญชี Google เดียวกับเจ้าของ deployment. การเปิดครั้งแรกอาจขอสิทธิ์เข้าถึงชีต และสร้างแท็บข้อมูลให้โดยอัตโนมัติ
+1. ใน Supabase **Authentication → Users** เชิญบัญชีอีเมลที่จะใช้งานแอป และให้ผู้ใช้ตั้งรหัสผ่านผ่านอีเมลเชิญ
+2. คัดลอก User ID ของบัญชีจากรายการ Users.
+3. ใน SQL Editor เพิ่มบัญชีนั้นลง allowlist:
 
-หลังตั้งค่าครบแล้ว การ push การแก้ไข Code.gs, Index.html หรือ appsscript.json ไปยัง main จะเรียก workflow เพื่ออัปโหลดและอัปเดต deployment เดิมโดยอัตโนมัติ
+   ```sql
+   insert into public.app_users (user_id) values ('USER_UUID');
+   ```
 
-## สิทธิ์และข้อมูล
+ทำซ้ำกับแต่ละบัญชีที่ต้องใช้ระบบ หากไม่มีแถวที่ active ใน app_users แม้ login สำเร็จ ผู้ใช้ก็จะอ่านหรือแก้ไขตาราง P4P ไม่ได้
 
-ค่าเริ่มต้นจำกัดเว็บแอปไว้ที่เจ้าของ deployment เท่านั้น การขยายสิทธิ์ให้บุคลากรอื่นต้องตั้งค่าการเข้าถึงเว็บแอปและกำหนดสิทธิ์ Google Sheet ให้เหมาะสมก่อน ห้ามเปลี่ยนเป็นผู้ใช้ทุกคนโดยไม่มีการตรวจสอบสิทธิ์และการควบคุมผู้ใช้ที่ชัดเจน
+## 3. ตั้งค่า GitHub Pages
 
-เมื่อเปิดแอปครั้งแรก ระบบจะสร้างแท็บ P4P Staff, P4P Activities และ P4P Entries ในชีตที่กำหนดไว้ใน Code.gs ข้อมูลจะแยกตามงวดเดือนและใช้ ID สำหรับเชื่อมโยงรายการ
+1. ใน repo ไปที่ **Settings → Pages** แล้วเลือก **Build and deployment → Source: GitHub Actions**.
+2. ใน **Settings → Secrets and variables → Actions → Secrets** เพิ่ม:
+   - SUPABASE_URL: Project URL จาก Supabase Project Settings / Connect.
+   - SUPABASE_PUBLISHABLE_KEY: publishable key ของโปรเจกต์ (หรือ legacy anon key ถ้าโปรเจกต์ยังใช้ key แบบเดิม).
+3. เพิ่ม Actions variable ชื่อ PAGES_DEPLOY_ENABLED และตั้งค่าเป็น true.
+4. เปิด **Actions → Deploy P4P dashboard to GitHub Pages → Run workflow** เพื่อ deploy ครั้งแรก.
 
-เก็บ CLASPRC_JSON ไว้ใน GitHub Actions Secrets เท่านั้น ห้าม commit หรือส่ง credential นี้ในแชต
+หลังตั้งค่านี้ การ push การแก้ไข index.html หรือ workflow ไปยัง main จะ deploy อัตโนมัติ URL ของ project site คือ:
 
-## เอกสารอ้างอิง
+https://wykiez86.github.io/p4p-pharmacy-dashboard/
 
-- [Apps Script web apps](https://developers.google.com/apps-script/guides/web)
-- [clasp และการ deploy ผ่าน GitHub Actions](https://developers.google.com/apps-script/guides/clasp)
-- [การเผยแพร่ GitHub Pages และการมองเห็นเว็บไซต์](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)
+นำ URL นี้ไปตั้งใน Supabase **Authentication → URL Configuration** เป็น Site URL และเพิ่มใน Redirect URLs.
+
+## ความปลอดภัย
+
+GitHub Pages อาจให้บริการหน้าเว็บเป็นสาธารณะ แม้ source repository เป็น private ทั้งนี้ขึ้นกับแผน GitHub และการตั้งค่า Pages. ตัวหน้าเว็บไม่บรรจุข้อมูลภาระงาน; การเข้าถึงข้อมูลต้องผ่าน Supabase Auth และ RLS. Publishable key ออกแบบมาให้ใช้ใน browser ได้ แต่ต้องรักษา RLS และ allowlist ไว้. **ห้ามใช้ secret key หรือ service_role key ใน frontend หรือ GitHub Pages artifact**.
+
+คู่มือ Supabase ระบุว่า publishable key เป็นค่าที่อ่านได้จาก browser และ RLS เป็นตัวกำหนดสิทธิ์เข้าถึงข้อมูล. ดู [Supabase API keys](https://supabase.com/docs/guides/getting-started/api-keys), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) และ [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site).
+
+## หมายเหตุการย้าย
+
+Google Sheet เดิมยังไม่ได้รับข้อมูลจากแอป และไม่มีการคัดลอกข้อมูลเข้ามาในการเปลี่ยนครั้งนี้. ระบบจะเริ่มใช้ Supabase หลังรัน schema, ตั้งค่า secrets และ deploy สำเร็จ.
