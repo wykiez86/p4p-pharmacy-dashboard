@@ -31,6 +31,7 @@ create table if not exists public.entries (
   staff_id uuid not null,
   activity_id uuid not null,
   day smallint not null check (day between 1 and 31),
+  check (day <= extract(day from (to_date(month || '-01', 'YYYY-MM-DD') + interval '1 month - 1 day')),
   count numeric not null check (count >= 0),
   created_at timestamptz not null default now(),
   constraint entries_staff_month_fk foreign key (staff_id, month)
