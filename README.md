@@ -1,19 +1,20 @@
-# ระบบบันทึกภาระงาน P4P กลุ่มงานเภสัชกรรม
+# P4P Pharmacy Dashboard
 
-เว็บแอปสำหรับบันทึกจำนวนงานรายวัน คำนวณคะแนน และติดตามเป้าหมายรายบุคคลของกลุ่มงานเภสัชกรรม โรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน โดยใช้ Google Sheets เป็นฐานข้อมูล และใช้ GitHub Actions ส่งโค้ดไปยัง Google Apps Script
+ระบบบันทึกและประเมินภาระงาน P4P กลุ่มงานเภสัชกรรม โรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน
 
-## ฟังก์ชัน
+## Stack
 
-- Matrix บันทึกงานแยกตามวันของงวดเดือน
-- เพิ่มบุคลากรและประเภทงาน พร้อมตั้งคะแนนต่องาน
-- คำนวณคะแนนสะสมและเปรียบเทียบเป้าหมายรายตำแหน่ง
-- ส่งออก Excel แบบสรุปและ Matrix รายวัน
-- จัดเก็บรายชื่อ ประเภทงาน และรายการคะแนนใน Google Sheets
+- Frontend: static HTML on GitHub Pages
+- Database and authentication: Supabase
+- Access control: Supabase Auth plus PostgreSQL Row Level Security (RLS)
+- Deployment: GitHub Actions
 
-เป้าหมายคะแนนรายเดือน: เภสัชกร 1,440 คะแนน, เจ้าพนักงานเภสัชกรรม 960 คะแนน, พนักงานประจำห้องยา 600 คะแนน รายละเอียดคะแนนต่อประเภทงานยังตั้งค่าได้ในแอป เพราะไม่ได้รับตารางคะแนนกิจกรรมมาในข้อกำหนด
+The dashboard tracks daily activity counts, calculates role-based monthly scores, summarizes progress, and exports summary and daily matrix sheets to Excel.
 
-## Deploy
+Monthly targets: เภสัชกร 1,440; เจ้าพนักงานเภสัชกรรม 960; พนักงานประจำห้องยา 600. Activity point values remain configurable because the supplied requirements did not include a detailed activity scoring table.
 
-ดูขั้นตอนเชื่อมชีต สร้าง Apps Script deployment และตั้งค่า GitHub Actions ที่ [SETUP.md](SETUP.md)
+## Setup
 
-เว็บแอปตั้งต้นจำกัดสิทธิ์ไว้ที่เจ้าของ deployment เท่านั้น การตั้งค่านี้ป้องกันการเปิดข้อมูลภาระงานให้ผู้ใช้ทั่วไป โปรดตรวจสอบสิทธิ์ก่อนขยายการเข้าถึงให้บุคลากรอื่น
+Follow [SETUP.md](SETUP.md) to create the Supabase schema, authorize users, configure GitHub Actions, and publish the app.
+
+Only the Supabase publishable key is placed in the browser bundle. Never use a Supabase secret or service_role key in this frontend. RLS must remain enabled on all app tables.
