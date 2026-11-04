@@ -53,6 +53,34 @@ begin
 end $$;
 create index if not exists activities_staff_month_idx on public.activities (staff_id, month);
 
+-- Standard activity examples from the supplied reference; no staff roster is seeded.
+insert into public.activities (month, name, role, unit, time, factor, work, points_per_task)
+select '2026-11', seed.name, seed.role, seed.unit, seed.time, seed.factor, seed.work, seed.time * seed.factor * seed.work
+from (values
+  ('จ่ายยา ร.10/รพ.สต.','เภสัชกร','รายการ',0.8085::numeric,0.17::numeric,1.25::numeric),
+  ('ติดตามดูแลผู้ป่วยฯ (Tele-pharmacy)','เภสัชกร','ราย',4.9::numeric,0.17::numeric,1.5::numeric),
+  ('งานเยี่ยมบ้าน (Home Healthcare)','เภสัชกร','ราย',120::numeric,0.17::numeric,2::numeric),
+  ('จัดอบรม/ประชุม','เภสัชกร','ครั้ง',120::numeric,0.17::numeric,1.5::numeric),
+  ('งานคุ้มครองผู้บริโภค','เภสัชกร','แห่ง',120::numeric,0.17::numeric,2::numeric),
+  ('นิเทศงาน รพ.สต.','เภสัชกร','แห่ง',120::numeric,0.17::numeric,2::numeric),
+  ('จัดยา OPD ร.10/รพ.สต.','เจ้าพนักงานเภสัชกรรม','รายการ',0.8::numeric,0.12::numeric,1.25::numeric),
+  ('ตรวจสอบ Stock card','เจ้าพนักงานเภสัชกรรม','รายการ',2::numeric,0.12::numeric,1.25::numeric),
+  ('เบิกยา บันทึก stock card','เจ้าพนักงานเภสัชกรรม','รายการ',3::numeric,0.12::numeric,1.25::numeric),
+  ('บันทึกข้อมูลระบบ Health Rider','เจ้าพนักงานเภสัชกรรม','เคส',4::numeric,0.12::numeric,2::numeric),
+  ('Pre-pack ยา','เจ้าพนักงานเภสัชกรรม','รายการ',30::numeric,0.12::numeric,1.25::numeric),
+  ('จัดยา OPD ร.10/รพ.สต.','พนักงานประจำห้องยา','รายการ',0.8::numeric,0.07::numeric,2::numeric),
+  ('เบิกจ่ายยาออกจากคลัง','พนักงานประจำห้องยา','รายการ',3::numeric,0.07::numeric,1::numeric),
+  ('จัดเตรียมยาออกจ่าย รพ.สต.','พนักงานประจำห้องยา','ครั้ง',30::numeric,0.07::numeric,2::numeric),
+  ('Pre-pack ยา','พนักงานประจำห้องยา','รายการ',30::numeric,0.07::numeric,2::numeric)
+) as seed(name, role, unit, time, factor, work)
+where not exists (
+  select 1 from public.activities existing
+  where existing.month = '2026-11'
+    and existing.name = seed.name
+    and existing.role = seed.role
+    and existing.staff_id is null
+);
+
 create table if not exists public.entries (
   id uuid primary key default gen_random_uuid(),
   month text not null check (month ~ '^\d{4}-(0[1-9]|1[0-2])$'),
