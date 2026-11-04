@@ -16,12 +16,30 @@ create table if not exists public.staff (
 
 create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
-  month text not null check (month ~ '^\d{4}-(0[1-9]|1[0-2])$'),
+  month text not null check (month ~ '^\\d{4}-(0[1-9]|1[0-2])$'),
   name text not null check (length(trim(name)) > 0),
   points_per_task numeric not null default 0 check (points_per_task >= 0),
+  staff_id uuid,
   created_at timestamptz not null default now(),
   unique (id, month)
 );
+
+-- Null staff_id means an activity shared by everyone; a value scopes it to one staff member.
+alter table public.activities add column if not exists staff_id uuid;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'activities_staff_month_fk'
+      and conrelid = 'public.activities'::regclass
+  ) then
+    alter table public.activities
+      add constraint activities_staff_month_fk
+      foreign key (staff_id, month)
+      references public.staff (id, month) on delete cascade;
+  end if;
+end $$;
+create index if not exists activities_staff_month_idx on public.activities (staff_id, month);
 
 create table if not exists public.entries (
   id uuid primary key default gen_random_uuid(),
